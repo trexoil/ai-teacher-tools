@@ -1,4 +1,47 @@
-import { Pool, PoolClient } from 'pg'
+import { Pool } from 'pg'
+
+export interface Category {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  icon: string | null
+  sort_order: number
+}
+
+export interface ToolCategory {
+  id: string
+  name: string
+  slug: string
+  icon: string | null
+}
+
+export interface Tool {
+  id: string
+  name: string
+  slug: string
+  tagline: string
+  description: string
+  logo_url: string | null
+  website_url: string
+  affiliate_url: string | null
+  affiliate_program: string | null
+  commission_rate: string | null
+  pricing_tier: string
+  starting_price: string | null
+  is_free: boolean
+  featured: boolean
+  visit_count: number
+  lead_count: number
+  rating: number | null
+  reviews_count: number
+  best_for: string[] | null
+  subjects: string[] | null
+  grade_levels: string[] | null
+  curriculum: string[] | null
+  languages: string[] | null
+  categories?: ToolCategory[]
+}
 
 let _pool: Pool | null = null
 
@@ -15,7 +58,7 @@ function getPool(): Pool {
   return _pool
 }
 
-export async function query(text: string, params?: any[]) {
+export async function query(text: string, params?: unknown[]) {
   const client = await getPool().connect()
   try {
     const result = await client.query(text, params)
@@ -25,12 +68,12 @@ export async function query(text: string, params?: any[]) {
   }
 }
 
-export async function getToolBySlug(slug: string) {
+export async function getToolBySlug(slug: string): Promise<Tool | null> {
   const result = await query(
-    `SELECT t.*, 
+    `SELECT t.*,
       COALESCE(
-        json_agg(json_build_object('id', c.id, 'name', c.name, 'slug', c.slug, 'icon', c.icon)) 
-        FILTER (WHERE c.id IS NOT NULL), 
+        json_agg(json_build_object('id', c.id, 'name', c.name, 'slug', c.slug, 'icon', c.icon))
+        FILTER (WHERE c.id IS NOT NULL),
         '[]'::json
       ) as categories
     FROM tools t
@@ -40,7 +83,7 @@ export async function getToolBySlug(slug: string) {
     GROUP BY t.id`,
     [slug]
   )
-  return result.rows[0] || null
+  return result.rows[0] ? (result.rows[0] as Tool) : null
 }
 
 export async function getAllTools(options?: {
@@ -49,19 +92,19 @@ export async function getAllTools(options?: {
   search?: string
   limit?: number
   offset?: number
-}) {
-  let sql = `SELECT t.*, 
+}): Promise<Tool[]> {
+  let sql = `SELECT t.*,
     COALESCE(
-      json_agg(json_build_object('id', c.id, 'name', c.name, 'slug', c.slug, 'icon', c.icon)) 
-      FILTER (WHERE c.id IS NOT NULL), 
+      json_agg(json_build_object('id', c.id, 'name', c.name, 'slug', c.slug, 'icon', c.icon))
+      FILTER (WHERE c.id IS NOT NULL),
       '[]'::json
     ) as categories
   FROM tools t
   LEFT JOIN tool_categories tc ON t.id = tc.tool_id
   LEFT JOIN categories c ON tc.category_id = c.id`
-  
+
   const conditions: string[] = []
-  const params: any[] = []
+  const params: unknown[] = []
   let paramIndex = 1
 
   if (options?.category) {
@@ -95,25 +138,25 @@ export async function getAllTools(options?: {
   }
 
   const result = await query(sql, params)
-  return result.rows
+  return result.rows as Tool[]
 }
 
-export async function getCategoryBySlug(slug: string) {
+export async function getCategoryBySlug(slug: string): Promise<Category | null> {
   const result = await query('SELECT * FROM categories WHERE slug = $1', [slug])
-  return result.rows[0] || null
+  return result.rows[0] ? (result.rows[0] as Category) : null
 }
 
-export async function getAllCategories() {
+export async function getAllCategories(): Promise<Category[]> {
   const result = await query('SELECT * FROM categories ORDER BY sort_order ASC')
-  return result.rows
+  return result.rows as Category[]
 }
 
-export async function getToolsByCategory(categorySlug: string) {
+export async function getToolsByCategory(categorySlug: string): Promise<Tool[]> {
   const result = await query(
-    `SELECT t.*, 
+    `SELECT t.*,
       COALESCE(
-        json_agg(json_build_object('id', c.id, 'name', c.name, 'slug', c.slug, 'icon', c.icon)) 
-        FILTER (WHERE c.id IS NOT NULL), 
+        json_agg(json_build_object('id', c.id, 'name', c.name, 'slug', c.slug, 'icon', c.icon))
+        FILTER (WHERE c.id IS NOT NULL),
         '[]'::json
       ) as categories
     FROM tools t
@@ -124,7 +167,7 @@ export async function getToolsByCategory(categorySlug: string) {
     ORDER BY t.featured DESC, t.rating DESC NULLS LAST`,
     [categorySlug]
   )
-  return result.rows
+  return result.rows as Tool[]
 }
 
 export async function createLead(email: string, type = 'newsletter', name?: string, message?: string) {
@@ -147,4 +190,6 @@ export async function incrementToolVisit(slug: string) {
   await query('UPDATE tools SET visit_count = visit_count + 1 WHERE slug = $1', [slug])
 }
 
-export default { query, getToolBySlug, getAllTools, getCategoryBySlug, getAllCategories, getToolsByCategory, createLead, createSubmission, incrementToolVisit }
+const db = { query, getToolBySlug, getAllTools, getCategoryBySlug, getAllCategories, getToolsByCategory, createLead, createSubmission, incrementToolVisit }
+
+export default db

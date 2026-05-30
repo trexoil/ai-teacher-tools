@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { FiGrid, FiArrowRight, FiSearch } from 'react-icons/fi';
+import { FiArrowRight, FiSearch } from 'react-icons/fi';
 import ToolCard from '@/components/ToolCard';
 import { getAllTools, getAllCategories } from '@/lib/db';
+import { categoryGradient } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,10 +29,12 @@ export default async function ToolsPage({
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900">All AI Tools for Teachers</h1>
-        <p className="text-slate-500 mt-1">
+        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900">
+          All AI Tools for <span className="gradient-text">Teachers</span>
+        </h1>
+        <p className="text-slate-500 mt-2">
           {q
-            ? `Showing results for "${q}" — ${allTools.length} tools found`
+            ? `Showing results for "${q}" — ${allTools.length} ${allTools.length === 1 ? 'tool' : 'tools'} found`
             : `Browse all ${allTools.length} AI tools for teachers and educators`}
         </p>
       </div>
@@ -40,27 +43,32 @@ export default async function ToolsPage({
       <div className="flex flex-wrap gap-2 mb-8">
         <Link
           href="/tools"
-          className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+          className={`text-xs font-semibold px-3.5 py-1.5 rounded-full border transition-all ${
             !category && !q
-              ? 'bg-indigo-600 text-white border-indigo-600'
+              ? 'text-white border-transparent shadow-sm'
               : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
           }`}
+          style={!category && !q ? { backgroundImage: categoryGradient('lesson-planning') } : undefined}
         >
           All Tools
         </Link>
-        {categories.map((cat) => (
-          <Link
-            key={cat.id}
-            href={`/tools?category=${cat.slug}`}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-              category === cat.slug
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
-            }`}
-          >
-            {cat.icon} {cat.name}
-          </Link>
-        ))}
+        {categories.map((cat) => {
+          const active = category === cat.slug;
+          return (
+            <Link
+              key={cat.id}
+              href={`/tools?category=${cat.slug}`}
+              className={`text-xs font-semibold px-3.5 py-1.5 rounded-full border transition-all ${
+                active
+                  ? 'text-white border-transparent shadow-sm'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+              }`}
+              style={active ? { backgroundImage: categoryGradient(cat.slug) } : undefined}
+            >
+              {cat.icon} {cat.name}
+            </Link>
+          );
+        })}
       </div>
 
       {/* Tools Grid */}
@@ -71,15 +79,17 @@ export default async function ToolsPage({
           ))}
         </div>
       ) : (
-        <div className="text-center py-16">
-          <div className="text-4xl mb-4">🔍</div>
+        <div className="text-center py-16 rounded-3xl border border-dashed border-slate-200 bg-slate-50/50">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
+            <FiSearch className="w-6 h-6 text-slate-400" />
+          </div>
           <h2 className="text-xl font-semibold text-slate-900 mb-2">No tools found</h2>
           <p className="text-slate-500 mb-6">
             {q ? `No tools matching "${q}"` : 'No tools in this category yet'}
           </p>
           <Link
             href="/tools"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-full text-sm font-medium hover:bg-indigo-700"
+            className="btn-primary inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
           >
             View All Tools
           </Link>
@@ -106,12 +116,12 @@ export async function generateMetadata({
 }: {
   searchParams: Promise<{ q?: string; category?: string }>;
 }) {
-  const { q, category } = await searchParams;
-  
+  const { q } = await searchParams;
+
   if (q) {
     return { title: `${q} — AI Tools for Teachers | AI Teacher Tools`, description: `Browse AI tools for teachers matching "${q}". Compare pricing and features.` };
   }
-  
+
   return {
     title: 'All AI Tools for Teachers — AI Teacher Tools Directory',
     description: 'Browse 66+ AI tools for teachers and educators. Compare lesson planning, quiz, grading, and presentation tools.',

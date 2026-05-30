@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { FiSearch } from 'react-icons/fi';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';

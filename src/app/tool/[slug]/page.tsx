@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  FiExternalLink, FiStar, FiClock, FiTag, FiUsers,
-  FiCheckCircle, FiArrowLeft, FiShare2, FiDollarSign, FiGlobe,
+  FiExternalLink, FiStar, FiTag, FiUsers,
+  FiCheckCircle, FiArrowLeft, FiDollarSign, FiGlobe, FiArrowUpRight,
 } from 'react-icons/fi';
 import NewsletterSignup from '@/components/NewsletterSignup';
+import ToolLogo from '@/components/ToolLogo';
 import { getToolBySlug, incrementToolVisit, getAllTools } from '@/lib/db';
+import { getCategoryTheme } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +17,7 @@ export default async function ToolPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  
+
   const tool = await getToolBySlug(slug);
 
   if (!tool) {
@@ -26,21 +28,21 @@ export default async function ToolPage({
   incrementToolVisit(slug).catch(() => {});
 
   // Get related tools (same categories)
-  const categorySlugs = tool.categories?.map((c: any) => c.slug) || [];
   const allTools = await getAllTools({ limit: 10 });
-  const related = allTools
-    .filter((t: any) => t.slug !== slug)
-    .slice(0, 4);
+  const related = allTools.filter((t) => t.slug !== slug).slice(0, 4);
 
-  const pricingClass = (tier: string) => {
-    const map: Record<string, string> = {
-      Free: 'pricing-free',
-      Freemium: 'pricing-freemium',
-      Paid: 'pricing-paid',
-      Enterprise: 'pricing-enterprise',
-    };
-    return map[tier] || 'bg-slate-100 text-slate-700';
-  };
+  const headerTheme = getCategoryTheme(tool.categories?.[0]?.slug);
+  const rating = tool.rating;
+
+  const infoCards = [
+    {
+      icon: FiDollarSign, label: 'Pricing', from: '#10b981', to: '#22d3ee',
+      value: `${tool.pricing_tier}${tool.starting_price ? ` • ${tool.starting_price}` : ''}`,
+    },
+    { icon: FiTag, label: 'Best For', from: '#6366f1', to: '#8b5cf6', value: tool.best_for?.[0] || 'General' },
+    { icon: FiGlobe, label: 'Commission', from: '#f59e0b', to: '#f97316', value: tool.commission_rate || 'N/A' },
+    { icon: FiUsers, label: 'Audience', from: '#ec4899', to: '#f43f5e', value: tool.grade_levels?.[0] || 'All' },
+  ];
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -54,22 +56,24 @@ export default async function ToolPage({
       </div>
 
       {/* Main Content */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8">
+      <div className="relative overflow-hidden bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+        {/* gradient top accent */}
+        <span
+          className="absolute inset-x-0 top-0 h-1.5"
+          style={{ backgroundImage: `linear-gradient(90deg, ${headerTheme.from}, ${headerTheme.to})` }}
+        />
+
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start gap-4 mb-6">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-3xl sm:text-4xl shrink-0 overflow-hidden">
-            {tool.logo_url ? (
-              <img src={tool.logo_url} alt={tool.name} className="w-full h-full object-contain p-2" />
-            ) : (
-              <span>🤖</span>
-            )}
+        <div className="flex flex-col sm:flex-row items-start gap-5 mb-6 pt-2">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shrink-0 overflow-hidden ring-1 ring-slate-200 shadow-sm">
+            <ToolLogo name={tool.name} src={tool.logo_url} monogramClassName="text-3xl" />
           </div>
           <div className="flex-1">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{tool.name}</h1>
               {tool.featured && (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                  <FiStar className="w-3 h-3 fill-amber-400" />
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                  <FiStar className="w-3 h-3 fill-amber-400 text-amber-400" />
                   Featured
                 </span>
               )}
@@ -77,17 +81,17 @@ export default async function ToolPage({
             <p className="text-base sm:text-lg text-slate-600">{tool.tagline}</p>
 
             {/* Rating */}
-            {tool.rating && (
-              <div className="flex items-center gap-2 mt-2">
+            {rating != null && (
+              <div className="flex items-center gap-2 mt-2.5">
                 <div className="flex items-center gap-0.5">
                   {[...Array(5)].map((_, i) => (
                     <FiStar
                       key={i}
-                      className={`w-4 h-4 ${i < Math.round(tool.rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`}
+                      className={`w-4 h-4 ${i < Math.round(rating) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`}
                     />
                   ))}
                 </div>
-                <span className="text-sm font-medium text-slate-900">{tool.rating.toFixed(1)}</span>
+                <span className="text-sm font-semibold text-slate-900">{rating.toFixed(1)}</span>
                 {tool.reviews_count > 0 && (
                   <span className="text-sm text-slate-500">({tool.reviews_count.toLocaleString()} reviews)</span>
                 )}
@@ -99,20 +103,20 @@ export default async function ToolPage({
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3 mb-8">
           <a
-            href={tool.websiteUrl}
+            href={tool.website_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-medium rounded-xl text-sm hover:bg-indigo-700 transition-colors"
+            className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 font-semibold rounded-xl text-sm"
           >
             <FiExternalLink className="w-4 h-4" />
             Visit Website
           </a>
-          {tool.affiliateUrl && (
+          {tool.affiliate_url && (
             <a
-              href={tool.affiliateUrl}
+              href={tool.affiliate_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white font-medium rounded-xl text-sm hover:bg-emerald-700 transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white font-semibold rounded-xl text-sm hover:bg-emerald-700 transition-colors shadow-sm"
             >
               <FiCheckCircle className="w-4 h-4" />
               Try for Free
@@ -121,41 +125,21 @@ export default async function ToolPage({
         </div>
 
         {/* Info Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <div className="bg-slate-50 rounded-xl p-3 sm:p-4">
-            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-              <FiDollarSign className="w-3.5 h-3.5" />
-              Pricing
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
+          {infoCards.map((card) => (
+            <div key={card.label} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+              <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
+                <span
+                  className="flex h-6 w-6 items-center justify-center rounded-lg text-white"
+                  style={{ backgroundImage: `linear-gradient(135deg, ${card.from}, ${card.to})` }}
+                >
+                  <card.icon className="w-3.5 h-3.5" />
+                </span>
+                {card.label}
+              </div>
+              <div className="text-sm font-semibold text-slate-900 truncate">{card.value}</div>
             </div>
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full inline-block ${pricingClass(tool.pricing_tier)}`}>
-              {tool.pricing_tier}{tool.starting_price ? ` • ${tool.starting_price}` : ''}
-            </span>
-          </div>
-          <div className="bg-slate-50 rounded-xl p-3 sm:p-4">
-            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-              <FiTag className="w-3.5 h-3.5" />
-              Best For
-            </div>
-            <div className="text-sm font-medium text-slate-900">{tool.best_for?.[0] || 'General'}</div>
-          </div>
-          <div className="bg-slate-50 rounded-xl p-3 sm:p-4">
-            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-              <FiGlobe className="w-3.5 h-3.5" />
-              Affiliate
-            </div>
-            <div className="text-sm font-medium text-slate-900">
-              {tool.commissionRate || 'N/A'}
-            </div>
-          </div>
-          <div className="bg-slate-50 rounded-xl p-3 sm:p-4">
-            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-              <FiUsers className="w-3.5 h-3.5" />
-              Audience
-            </div>
-            <div className="text-sm font-medium text-slate-900">
-              {tool.grade_levels?.[0] || 'All'}
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Description */}
@@ -164,13 +148,13 @@ export default async function ToolPage({
           <p className="text-slate-600 leading-relaxed whitespace-pre-line">{tool.description}</p>
         </div>
 
-        {/* Tags */}
+        {/* Best For tags */}
         {tool.best_for && tool.best_for.length > 0 && (
           <div className="mb-8">
             <h3 className="text-sm font-semibold text-slate-700 mb-2">Best For</h3>
             <div className="flex flex-wrap gap-2">
               {tool.best_for.map((item: string) => (
-                <span key={item} className="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full">
+                <span key={item} className="text-xs font-medium bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full border border-indigo-100">
                   {item}
                 </span>
               ))}
@@ -207,15 +191,19 @@ export default async function ToolPage({
           <div className="border-t border-slate-200 pt-6">
             <h3 className="text-sm font-semibold text-slate-700 mb-3">Categories</h3>
             <div className="flex flex-wrap gap-2">
-              {tool.categories.map((cat: any) => (
-                <Link
-                  key={cat.id}
-                  href={`/category/${cat.slug}`}
-                  className="inline-flex items-center gap-1.5 text-xs bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full hover:border-indigo-300 hover:text-indigo-600 transition-colors"
-                >
-                  {cat.icon} {cat.name}
-                </Link>
-              ))}
+              {tool.categories.map((cat) => {
+                const t = getCategoryTheme(cat.slug);
+                return (
+                  <Link
+                    key={cat.id}
+                    href={`/category/${cat.slug}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-transform hover:scale-105"
+                    style={{ backgroundColor: t.tint, color: t.fg }}
+                  >
+                    {cat.icon} {cat.name}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}
@@ -226,23 +214,20 @@ export default async function ToolPage({
         <div className="mt-12">
           <h2 className="text-xl font-bold text-slate-900 mb-6">Related AI Tools</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {related.map((t: any) => (
+            {related.map((t) => (
               <Link
                 key={t.id}
                 href={`/tool/${t.slug}`}
-                className="flex items-start gap-3 bg-white border border-slate-200 rounded-xl p-4 hover:border-indigo-300 hover:shadow-sm transition-all group"
+                className="card-hover group flex items-start gap-3 bg-white border border-slate-200 rounded-2xl p-4 hover:border-indigo-300"
               >
-                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-lg border border-indigo-100 shrink-0 overflow-hidden">
-                  {t.logo_url ? (
-                    <img src={t.logo_url} alt={t.name} className="w-full h-full object-contain p-1" />
-                  ) : (
-                    <span>🤖</span>
-                  )}
+                <div className="w-10 h-10 rounded-xl overflow-hidden ring-1 ring-slate-200 shrink-0">
+                  <ToolLogo name={t.name} src={t.logo_url} monogramClassName="text-base" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <h3 className="font-semibold text-sm text-slate-900 group-hover:text-indigo-600 truncate">{t.name}</h3>
                   <p className="text-xs text-slate-500 line-clamp-1">{t.tagline}</p>
                 </div>
+                <FiArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors shrink-0" />
               </Link>
             ))}
           </div>
@@ -256,10 +241,7 @@ export default async function ToolPage({
 
       {/* Back link */}
       <div className="mt-8">
-        <Link
-          href="/tools"
-          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600"
-        >
+        <Link href="/tools" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600">
           <FiArrowLeft className="w-4 h-4" />
           Back to All Tools
         </Link>
@@ -275,7 +257,7 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const tool = await getToolBySlug(slug);
-  
+
   if (!tool) return { title: 'Tool Not Found' };
 
   return {

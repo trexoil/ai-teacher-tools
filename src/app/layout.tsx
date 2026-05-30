@@ -15,13 +15,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Teacher Tools — The Best AI Tools for Teachers & Educators",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://ai-teacher-tools.vercel.app"),
+  title: {
+    default: "AI Teacher Tools — The Best AI Tools for Teachers & Educators",
+    template: "%s",
+  },
   description: "Discover 60+ AI tools for teachers. Compare lesson planning, quiz generation, grading, presentation, and classroom AI tools. Free and paid options.",
   keywords: "AI tools for teachers, AI lesson plan generator, AI quiz maker, AI grading tools, AI for educators, teaching AI tools",
   openGraph: {
     title: "AI Teacher Tools — Directory of AI Tools for Educators",
     description: "Discover the best AI tools to save time and enhance your teaching.",
     type: "website",
+    siteName: "AI Teacher Tools",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AI Teacher Tools — Directory of AI Tools for Educators",
+    description: "Discover the best AI tools to save time and enhance your teaching.",
   },
 };
 
