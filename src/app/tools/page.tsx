@@ -3,6 +3,8 @@ import { FiGrid, FiArrowRight, FiSearch } from 'react-icons/fi';
 import ToolCard from '@/components/ToolCard';
 import { getAllTools, getAllCategories } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ToolsPage({
   searchParams,
 }: {

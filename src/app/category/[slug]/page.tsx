@@ -4,6 +4,8 @@ import { FiArrowLeft, FiGrid } from 'react-icons/fi';
 import ToolCard from '@/components/ToolCard';
 import { getCategoryBySlug, getToolsByCategory } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export default async function CategoryPage({
   params,
 }: {

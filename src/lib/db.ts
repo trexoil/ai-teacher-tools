@@ -1,12 +1,22 @@
-import { Pool } from 'pg'
+import { Pool, PoolClient } from 'pg'
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-})
+let _pool: Pool | null = null
+
+function getPool(): Pool {
+  if (!_pool) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL is not set')
+    }
+    _pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    })
+  }
+  return _pool
+}
 
 export async function query(text: string, params?: any[]) {
-  const client = await pool.connect()
+  const client = await getPool().connect()
   try {
     const result = await client.query(text, params)
     return result

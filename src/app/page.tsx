@@ -5,6 +5,8 @@ import SearchBar from '@/components/SearchBar';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import { getAllCategories, getAllTools } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export default async function HomePage() {
   const [categories, tools] = await Promise.all([
     getAllCategories(),
