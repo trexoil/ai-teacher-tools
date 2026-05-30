@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum PricingTier {
+  Free
+  Freemium
+  Paid
+  Enterprise
+}
+
+model Tool {
+  id              String      @id @default(cuid())
+  name            String      @unique
+  slug            String      @unique
+  tagline         String
+  description     String      @db.Text
+  logoUrl         String?
+  websiteUrl      String
+  affiliateUrl    String?
+  affiliateProgram String?
+  commissionRate  String?
+  pricingTier     PricingTier @default(Free)
+  startingPrice   String?
+  isFree          Boolean     @default(false)
+  featured        Boolean     @default(false)
+  visitCount      Int         @default(0)
+  leadCount       Int         @default(0)
+  rating          Float?
+  reviewsCount    Int         @default(0)
+  bestFor         String[]    @default([])
+  subjects        String[]    @default([])
+  gradeLevels     String[]    @default([])
+  curriculum      String[]    @default([])
+  languages       String[]    @default([])
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  categories      ToolCategory[]
+  reviews         Review[]
+}
+
+model Category {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  slug      String        @unique
+  description String?
+  icon      String?
+  sortOrder Int           @default(0)
+  tools     ToolCategory[]
+  createdAt  DateTime      @default(now())
+}
+
+model ToolCategory {
+  toolId     String
+  categoryId String
+  tool       Tool     @relation(fields: [toolId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@id([toolId, categoryId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  toolId    String
+  tool      Tool     @relation(fields: [toolId], references: [id])
+  name      String?
+  email     String?
+  rating    Int
+  comment   String   @db.Text
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  toolId    String?
+  name      String?
+  email     String
+  message   String?
+  type      String   @default("general") // "newsletter", "tool-request", "listing-inquiry"
+  createdAt DateTime @default(now())
+}
+
+model Submission {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  toolName    String
+  toolUrl     String
+  description String?
+  pricing     String?
+  status      String   @default("pending") // pending, approved, rejected
+  createdAt   DateTime @default(now())
+}
